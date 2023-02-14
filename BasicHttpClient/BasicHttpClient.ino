@@ -19,10 +19,25 @@
 ESP8266WiFiMulti WiFiMulti;
 DynamicJsonDocument res(1024);
 
+int IN1_pin = 16;
+int IN2_pin = 14;
+int IN3_pin = 12;
+int IN4_pin = 13;
+
+int ENA_pin = 5;
+int ENB_pin = 4;
+
 void setup() {
   Serial.printf("Setting Up");
-  pinMode(4, OUTPUT);
-  pinMode(5, OUTPUT);
+  pinMode(ENA_pin, OUTPUT);
+  pinMode(ENB_pin, OUTPUT);
+
+  pinMode(IN1_pin, OUTPUT);
+  pinMode(IN2_pin, OUTPUT);
+  pinMode(IN3_pin, OUTPUT);
+  pinMode(IN4_pin, OUTPUT);
+
+  pinMode(LED_BUILTIN, OUTPUT);
   Serial.begin(115200);
   // Serial.setDebugOutput(true);
 
@@ -41,13 +56,15 @@ void setup() {
 }
 
 void loop() {
+  digitalWrite(LED_BUILTIN, LOW);
   // wait for WiFi connection
   if ((WiFiMulti.run() == WL_CONNECTED)) {
     Serial.printf("Connected Succesfully");
     WiFiClient client;
     HTTPClient http;
     while (1) {
-      if (http.begin(client, "http://192.168.137.1:5000")) {  // HTTP
+      if (http.begin(client, "http://192.168.137.1:4000")) {  // HTTP
+        digitalWrite(LED_BUILTIN, HIGH);
         // start connection and send HTTP header
         int httpCode = http.GET();
 
@@ -61,13 +78,19 @@ void loop() {
             String payload = http.getString();
             Serial.println(payload);
             deserializeJson(res, payload);
-            float ly = res["ly"];
-            float ry = res["ry"];
-            Serial.println(ly);
-            float led1_brightness = ly * 255;
-            float led2_birghtness = ry * 255;
-            analogWrite(4, led1_brightness);
-            analogWrite(5, led2_birghtness);
+            int IN1 = res["IN1"];
+            int IN2 = res["IN2"];
+            int IN3 = res["IN3"];
+            int IN4 = res["IN4"];
+            int ENA = res["ENA"];
+            int ENB = res["ENB"];
+
+            digitalWrite(IN1_pin, IN1);
+            digitalWrite(IN2_pin, IN2);
+            digitalWrite(IN3_pin, IN3);
+            digitalWrite(IN4_pin, IN4);
+            analogWrite(ENA_pin, ENA);
+            analogWrite(ENB_pin, ENB);
           }
         } else {
           Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
@@ -79,6 +102,9 @@ void loop() {
       }
       delay(200);
     }
+  } else {
+    digitalWrite(LED_BUILTIN, LOW);
+    Serial.println("Not Connected Trying again...");
   }
   delay(1000);
 }
